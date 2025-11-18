@@ -1,58 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Simple HTML Page</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Budget App — Modern UI</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f7f7f7;
-        }
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        .container {
-            max-width: 700px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+  <!-- AOS (Animate On Scroll) -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
 
-        h1 {
-            color: #333;
-        }
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-        button {
-            padding: 10px 20px;
-            border: none;
-            background: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-        button:hover {
-            background: #0056b3;
-        }
-    </style>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --primary:#0d6efd;
+      --muted:#6c757d;
+    }
+    body{
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #222;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* Top header */
+    .topbar{
+      background: linear-gradient(90deg,#0d6efd22,#6610f522);
+      border-bottom: 1px solid rgba(13,110,253,0.06);
+      backdrop-filter: blur(6px);
+    }
+
+    .app-card{
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(16,24,40,0.06);
+      padding: 18px;
+    }
+
+    .motion-hover{
+      transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s;
+    }
+    .motion-hover:hover{
+      transform: translateY(-6px);
+      box-shadow: 0 14px 40px rgba(24,40,80,0.08);
+    }
+
+    /* Table small layout */
+    .table thead th{
+      border-bottom: 0;
+      font-weight:600;
+      color: #333;
+    }
+    .table td, .table th{
+      vertical-align: middle;
+    }
+
+    /* Small helper */
+    .muted { color: var(--muted); }
+    .pill {
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+    }
+
+    .balance-positive{ color: #198754; font-weight:700;}
+    .balance-negative{ color: #dc3545; font-weight:700;}
+
+    /* Footer */
+    footer{ font-size:13px; color:var(--muted); padding:28px 0; }
+
+    /* Responsive tweaks */
+    @media (max-width:768px){
+      .desktop-only { display:none; }
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Welcome to My HTML Page</h1>
+  <!-- HEADER -->
+  <nav class="topbar py-3">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width:46px;height:46px;box-shadow:0 6px 18px rgba(13,110,253,0.08);">
+          <strong style="color:var(--primary);">B</strong>
+        </div>
+        <div>
+          <h5 class="mb-0">Budgetify</h5>
+          <small class="muted">Smart budget dashboard</small>
+        </div>
+      </div>
 
-        <p>
-            This is a simple sample webpage.  
-            You can edit this page and upload it on GitHub.
-        </p>
+      <div class="d-flex align-items-center gap-3">
+        <button id="openAddBtn" class="btn btn-outline-primary btn-sm motion-hover">+ Add Expense</button>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown">Account</button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <li><a class="dropdown-item" href="#">Settings</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
 
-        <button onclick="alert('Button clicked!')">Click Me</button>
+  <!-- MAIN -->
+  <main class="container my-5">
+    <div class="row g-4">
+
+      <!-- LEFT: Summary + Chart -->
+      <div class="col-xl-4 col-lg-5" data-aos="fade-right">
+        <div class="app-card motion-hover">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+              <h6 class="mb-0">Monthly Allowance</h6>
+              <small class="muted">Budget for this month</small>
+            </div>
+            <div class="text-end">
+              <div style="font-size:20px; font-weight:700;">₹<span id="allowanceValue">50,000</span></div>
+              <small class="muted">Available</small>
+            </div>
+          </div>
+
+          <hr>
+
+          <canvas id="categoryChart" width="400" height="300"></canvas>
+
+          <div class="mt-3 d-flex gap-2 flex-wrap">
+            <div class="pill bg-light">Groceries</div>
+            <div class="pill bg-light">Transport</div>
+            <div class="pill bg-light">Eating Out</div>
+          </div>
+        </div>
+
+        <div class="app-card mt-4 motion-hover" data-aos="fade-up" data-aos-delay="100">
+          <h6>Quick Actions</h6>
+          <div class="d-flex gap-2 mt-3">
+            <button id="addSampleBtn" class="btn btn-outline-success btn-sm">Add sample row</button>
+            <button id="resetBtn" class="btn btn-outline-danger btn-sm">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Table & Controls -->
+      <div class="col-xl-8 col-lg-7" data-aos="fade-left">
+        <div class="app-card">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0">Monthly Expenses</h5>
+            <div class="muted desktop-only">Total items: <span id="totalItems">0</span></div>
+          </div>
+
+          <!-- Filters -->
+          <div class="row g-2 align-items-center mb-3">
+            <div class="col-sm-5">
+              <input id="searchInput" class="form-control form-control-sm" placeholder="Search category or note..." />
+            </div>
+            <div class="col-sm-4">
+              <select id="filterType" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                <option>Groceries</option>
+                <option>Transport</option>
+                <option>Eating Out</option>
+                <option>Miscellaneous</option>
+              </select>
+            </div>
+            <div class="col-sm-3 text-end">
+              <button id="exportCsv" class="btn btn-sm btn-outline-secondary">Export CSV</button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-responsive">
+            <table id="expenseTable" class="table table-borderless align-middle">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Frequency</th>
+                  <th>Note</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="expenseBody">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3">
+            <div>
+              <small class="muted">Tip: click on a row to quick edit</small>
+            </div>
+            <div>
+              <strong>Balance: </strong>
+              <span id="balanceDisplay" class="balance-positive">₹ 50,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- FOOTER -->
+    <footer class="mt-4 text-center">
+      <div class="container">
+        <p class="mb-0">Made with ❤️ — Budgetify • Animated UI</p>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ADD / EDIT Modal -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="editForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Add Expense</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="rowId" />
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <input id="categoryInput" class="form-control" required placeholder="e.g., Groceries" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amount (₹)</label>
+            <input id="amountInput" type="number" min="0" step="0.01" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Frequency</label>
+            <select id="frequencyInput" class="form-select">
+              <option>Monthly</option>
+              <option>Weekly</option>
+              <option>One-time</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Note</label>
+            <input id="noteInput" class="form-control" placeholder="Optional note" />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap & AOS JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
+  <script>
+    // ==========================
+    // Init AOS animations
+    // ==========================
+    AOS.init({ once: true, duration: 700 });
+
+    // ==========================
+    // Sample data structure
+    // Replace or merge this with your existing project's data & logic
+    // Each row: { id, category, amount, frequency, note }
+    // ==========================
+    let allowance = 50000; // main allowance (₹)
+    document.getElementById('allowanceValue').textContent = allowance.toLocaleString();
+
+    let rows = [
+      { id: genId(), category: 'Groceries', amount: 6200, frequency: 'Monthly', note: 'Home groceries' },
+      { id: genId(), category: 'Transport', amount: 1500, frequency: 'Monthly', note: 'Transit pass' },
+      { id: genId(), category: 'Eating Out', amount: 2400, frequency: 'Monthly', note: 'Restaurants' }
+    ];
+
+    // ==========================
+    // Helpers
+    // ==========================
+    function genId(){ return 'r' + Math.random().toString(36).slice(2,9); }
+
+    function formatINR(v){
+      return '₹ ' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    // ==========================
+    // Render table & stats
+    // ==========================
+    const expenseBody = document.getElementById('expenseBody');
+    const totalItemsEl = document.getElementById('totalItems');
+    const balanceEl = document.getElementById('balanceDisplay');
+
+    function renderTable(filterText = '', filterCategory = ''){
+      expenseBody.innerHTML = '';
+      let filtered = rows.filter(r => {
+        const text = `${r.category} ${r.note} ${r.frequency} ${r.amount}`.toLowerCase();
+        if(filterCategory && r.category !== filterCategory) return false;
+        if(filterText && !text.includes(filterText.toLowerCase())) return false;
+        return true;
+      });
+
+      filtered.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'align-middle';
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(r.category)}</strong><div class="muted small">${r.frequency}</div></td>
+          <td>${formatINR(r.amount)}</td>
+          <td>${r.frequency}</td>
+          <td class="muted">${escapeHtml(r.note || '')}</td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-outline-primary edit-btn" data-id="${r.id}">Edit</button>
+              <button class="btn btn-outline-danger del-btn" data-id="${r.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        // quick edit on row click
+        tr.addEventListener('dblclick', () => openEditModal(r.id));
+        expenseBody.appendChild(tr);
+      });
+
+      totalItemsEl.textContent = filtered.length;
+      updateBalance();
+      updateChart();
+    }
+
+    function updateBalance(){
+      // compute sum of amounts (digit-by-digit safe)
+      let total = 0;
+      for(const r of rows){
+        // parse as number to avoid float-sum issues — your project can improve this using integer cents
+        total += Number(r.amount) || 0;
+      }
+      const balance = allowance - total;
+      balanceEl.textContent = formatINR(balance);
+      if(balance < 0){
+        balanceEl.classList.remove('balance-positive');
+        balanceEl.classList.add('balance-negative');
+      } else {
+        balanceEl.classList.remove('balance-negative');
+        balanceEl.classList.add('balance-positive');
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    // ==========================
+    // Modal handling (Add / Edit)
+    // ==========================
+    const editModalEl = document.getElementById('editModal');
+    const editModal = new bootstrap.Modal(editModalEl, {});
+
+    const editForm = document.getElementById('editForm');
+    const modalTitle = document.getElementById('modalTitle');
+    const rowIdInput = document.getElementById('rowId');
+    const categoryInput = document.getElementById('categoryInput');
+    const amountInput = document.getElementById('amountInput');
+    const frequencyInput = document.getElementById('frequencyInput');
+    const noteInput = document.getElementById('noteInput');
+
+    document.getElementById('openAddBtn').addEventListener('click', () => {
+      openAddModal();
+    });
+
+    function openAddModal(){
+      modalTitle.textContent = 'Add Expense';
+      rowIdInput.value = '';
+      categoryInput.value = '';
+      amountInput.value = '';
+      frequencyInput.value = 'Monthly';
+      noteInput.value = '';
+      editModal.show();
+    }
+
+    function openEditModal(id){
+      const item = rows.find(r => r.id === id);
+      if(!item) return;
+      modalTitle.textContent = 'Edit Expense';
+      rowIdInput.value = item.id;
+      categoryInput.value = item.category;
+      amountInput.value = item.amount;
+      frequencyInput.value = item.frequency;
+      noteInput.value = item.note;
+      editModal.show();
+    }
+
+    editForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = rowIdInput.value;
+      const data = {
+        id: id || genId(),
+        category: categoryInput.value.trim() || 'Miscellaneous',
+        amount: Number(amountInput.value) || 0,
+        frequency: frequencyInput.value,
+        note: noteInput.value.trim()
+      };
+
+      if(id){
+        // update existing
+        rows = rows.map(r => r.id === id ? data : r);
+      } else {
+        // add new
+        rows.unshift(data);
+      }
+
+      editModal.hide();
+      renderTable(document.getElementById('searchInput').value, document.getElementById('filterType').value);
+    });
+
+    // Delete handler (delegation)
+    document.addEventListener('click', (e) => {
+      if(e.target.closest('.del-btn')){
+        const id = e.target.closest('.del-btn').dataset.id;
+        if(!confirm('Delete this row?')) return;
+        rows = rows.filter(r => r.id !== id);
+        renderTable(document.getElementById('searchInput').value, document.getElementById('filterType').value);
+      } else if(e.target.closest('.edit-btn')){
+        const id = e.target.closest('.edit-btn').dataset.id;
+        openEditModal(id);
+      }
+    });
+
+    // ==========================
+    // Filters & Export
+    // ==========================
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      renderTable(e.target.value, document.getElementById('filterType').value);
+    });
+
+    document.getElementById('filterType').addEventListener('change', (e) => {
+      renderTable(document.getElementById('searchInput').value, e.target.value);
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      exportCSV();
+    });
+
+    function exportCSV(){
+      const headers = ['Category','Amount','Frequency','Note'];
+      const lines = [headers.join(',')];
+      for(const r of rows){
+        const row = [r.category, r.amount, r.frequency, `"${(r.note||'').replaceAll('"','""')}"`];
+        lines.push(row.join(','));
+      }
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'budget_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Quick sample actions
+    document.getElementById('addSampleBtn').addEventListener('click', () => {
+      rows.unshift({ id: genId(), category: 'Miscellaneous', amount: 999, frequency: 'One-time', note: 'Sample' });
+      renderTable();
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if(!confirm('Reset sample data?')) return;
+      rows = [];
+      renderTable();
+    });
+
+    // ==========================
+    // Chart.js - Category distribution
+    // ==========================
+    let chart;
+    function updateChart(){
+      // group by category and sum amounts
+      const map = {};
+      for(const r of rows){
+        map[r.category] = (map[r.category] || 0) + Number(r.amount);
+      }
+      const labels = Object.keys(map);
+      const data = labels.map(l => map[l]);
+
+      if(!chart){
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data,
+              // DO NOT set colours explicitly if you want Chart.js default palette.
+              // For consistent colors you can provide an array here.
+              backgroundColor: [
+                '#0d6efd','#198754','#fd7e14','#dc3545','#6f42c1','#0dcaf0'
+              ],
+              hoverOffset: 8,
+            }]
+          },
+          options: {
+            plugins: {
+              legend: { position: 'bottom' },
+              tooltip: { callbacks: {} }
+            },
+            maintainAspectRatio: false
+          }
+        });
+      } else {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        chart.update();
+      }
+    }
+
+    // ==========================
+    // Start
+    // ==========================
+    renderTable();
+    updateChart();
+
+    // ==========================
+    // Integration notes for your existing project:
+    // - Replace `rows` with your existing data source (API, localStorage, or existing JS variable)
+    // - If you use custom frequency/percentage logic, update updateBalance() accordingly
+    // - If you already have functions for add/edit/delete, call them from modal submit instead of modifying the rows array directly
+    // - To highlight 'Miscellaneous' row spanning multiple columns, update renderTable to set colspan and custom cell markup when category === 'Miscellaneous'
+    //
+    // Example: to load data from your existing function:
+    // rows = myExistingLoadFunction(); renderTable();
+    // ==========================
+  </script>
 </body>
 </html>
